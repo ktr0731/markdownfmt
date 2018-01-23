@@ -1,8 +1,8 @@
 package markdown
 
 import (
+	"bytes"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,8 +17,20 @@ func read(t *testing.T, fname string) []byte {
 
 func TestPrinter(t *testing.T) {
 	node := Parse(read(t, "testdata/test1.md"))
-	p := NewPrinter(os.Stderr, node)
+	buf := new(bytes.Buffer)
+	p := NewPrinter(buf, node)
 	p.Fprint()
+
+	expected := `# header1
+
+---
+
+## header2
+this is a text.  
+two line text and paragraph.  
+`
+
+	assert.Equal(t, expected, buf.String())
 }
 
 func Test_formatParagraph(t *testing.T) {

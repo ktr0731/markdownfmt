@@ -67,7 +67,7 @@ func (p *Printer) exiting(n *bf.Node) {
 	case bf.Heading:
 		p.print("\n")
 	case bf.Paragraph:
-		p.print("\n")
+		p.print("  \n")
 	}
 }
 
