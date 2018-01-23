@@ -20,11 +20,6 @@ func main() {
 	flag.Parse()
 
 	if isatty.IsTerminal(os.Stdin.Fd()) {
-		var in io.Writer
-		if write == nil {
-			in = os.Stdout
-		}
-
 		for _, fname := range flag.Args() {
 			b, err := readFile(fname)
 			if err != nil {
@@ -63,7 +58,12 @@ func format(in []byte, dest string) error {
 			return err
 		}
 		defer f.Close()
-		out = &writer{f: f, dest: dest}
+		// out = &writer{f: f, dest: dest}
+		out, err = os.Create(dest)
+		if err != nil {
+			return err
+		}
+		defer out.(*os.File).Close()
 	}
 
 	p := markdown.NewPrinter(out, markdown.Parse(in))
