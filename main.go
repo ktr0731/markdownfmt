@@ -35,30 +35,15 @@ func main() {
 	}
 }
 
-type writer struct {
-	f    *os.File
-	dest string
-}
-
-func (w *writer) Write(b []byte) (int, error) {
-	f, err := os.Create(w.dest)
-	if err != nil {
-		return 0, err
-	}
-	defer f.Close()
-	return f.Write(b)
-}
-
 // if out is os.Stdout, dest is not used.
 func format(in []byte, dest string) error {
 	var out io.Writer = os.Stdout
-	if write != nil {
+	if *write {
 		f, err := ioutil.TempFile("", "")
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-		// out = &writer{f: f, dest: dest}
 		out, err = os.Create(dest)
 		if err != nil {
 			return err
