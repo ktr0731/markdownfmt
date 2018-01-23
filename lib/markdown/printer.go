@@ -86,6 +86,7 @@ func (p *Printer) exiting(n *bf.Node) bf.WalkStatus {
 // - cannot use spaces rather than one ("  this   is a text  " -> "this is a text")
 // - if p[i] is "\n", replace it by " "
 //	- however, if the node is within a container, this rule is ignored
+// - max width is 80
 func (p *Printer) formatText(n *bf.Node) string {
 	l := n.Literal
 	var i, bufPos int
@@ -93,7 +94,7 @@ func (p *Printer) formatText(n *bf.Node) string {
 	buf := make([]byte, len(l))
 	for ; ; i++ {
 		if i >= len(l) {
-			return strings.TrimSpace(string(buf[:bufPos]))
+			return breakLine(strings.TrimSpace(string(buf[:bufPos])), 80)
 		}
 		if l[i] == ' ' {
 			if (p.inContainer && isHead) || hasSpace {
@@ -145,4 +146,36 @@ func formatBlockQuote(n *bf.Node) string {
 
 func isBlock(t bf.NodeType) bool {
 	return t == bf.Paragraph || t == bf.BlockQuote || t == bf.List || t == bf.Heading || t == bf.CodeBlock
+}
+
+func breakLine(s string, w int) string {
+	res := [][]string{}
+	sp := strings.Split(s, " ")
+	l := []string{}
+	var cnt int
+	for _, p := range sp {
+		// last element
+		if p == sp[len(sp)-1] {
+			if cnt+len(l)+len(p) > w {
+				res = append(res, l)
+			}
+			l = append(l, p)
+			res = append(res, l)
+			break
+		}
+
+		if cnt+len(l)+len(p) > w {
+			res = append(res, l)
+			l = []string{}
+			cnt = 0
+		}
+		l = append(l, p)
+		cnt += len(p)
+	}
+
+	tmp := make([]string, len(res))
+	for i, a := range res {
+		tmp[i] = strings.Join(a, " ")
+	}
+	return strings.Join(tmp, "\n")
 }

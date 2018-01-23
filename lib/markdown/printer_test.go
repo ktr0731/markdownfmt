@@ -84,3 +84,13 @@ func Test_formatText(t *testing.T) {
 		}
 	})
 }
+
+func Test_breakLine(t *testing.T) {
+	in := "this is a long text for testing."
+	expected := `this is a
+long text
+for
+testing.`
+	actual := breakLine(in, 10)
+	assert.Equal(t, expected, actual)
+}
