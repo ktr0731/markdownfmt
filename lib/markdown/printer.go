@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -9,8 +10,9 @@ import (
 )
 
 type Printer struct {
-	out  io.Writer
-	node *bf.Node
+	out         io.Writer
+	node        *bf.Node
+	inContainer bool
 }
 
 func NewPrinter(out io.Writer, node *bf.Node) *Printer {
@@ -18,6 +20,12 @@ func NewPrinter(out io.Writer, node *bf.Node) *Printer {
 		out:  out,
 		node: node,
 	}
+}
+
+func newPrinterWithinContainer(out io.Writer, node *bf.Node) *Printer {
+	p := NewPrinter(out, node)
+	p.inContainer = true
+	return p
 }
 
 func (p *Printer) Fprint() {
@@ -37,14 +45,12 @@ func (p *Printer) heading(h bf.HeadingData) {
 
 func (p *Printer) visitor(n *bf.Node, entering bool) bf.WalkStatus {
 	if entering {
-		p.entering(n)
-	} else {
-		p.exiting(n)
+		return p.entering(n)
 	}
-	return bf.GoToNext
+	return p.exiting(n)
 }
 
-func (p *Printer) entering(n *bf.Node) {
+func (p *Printer) entering(n *bf.Node) bf.WalkStatus {
 	switch n.Type {
 	case bf.Heading:
 		p.heading(n.HeadingData)
@@ -52,49 +58,61 @@ func (p *Printer) entering(n *bf.Node) {
 	case bf.HorizontalRule:
 		p.print(formatHorizontalRule())
 	case bf.Text:
-		p.print(formatText(n.Literal))
+		p.print(p.formatText(n))
+	case bf.BlockQuote:
+		p.print(formatBlockQuote(n))
+		return bf.SkipChildren
 	case bf.Document:
 	case bf.Paragraph:
 	default:
 		p.print(n.String())
 	}
+	return bf.GoToNext
 }
 
 // only blocks
 // paragraphs, block quotations, lists, headings, rules, and code blocks
-func (p *Printer) exiting(n *bf.Node) {
+func (p *Printer) exiting(n *bf.Node) bf.WalkStatus {
 	switch n.Type {
 	case bf.Heading:
 		p.print("\n")
 	case bf.Paragraph:
 		p.print(formatParagraphExiting(n))
 	}
+	return bf.GoToNext
 }
 
 // rules:
 // - cannot use spaces rather than one ("  this   is a text  " -> "this is a text")
 // - if p[i] is "\n", replace it by " "
-func formatText(p []byte) string {
+//	- however, if the node is within a container, this rule is ignored
+func (p *Printer) formatText(n *bf.Node) string {
+	l := n.Literal
 	var i, bufPos int
-	var hasSpce bool
-	buf := make([]byte, len(p))
+	var hasSpace, isHead bool
+	buf := make([]byte, len(l))
 	for ; ; i++ {
-		if i >= len(p) {
+		if i >= len(l) {
 			return strings.TrimSpace(string(buf[:bufPos]))
 		}
-		if p[i] == ' ' && hasSpce {
-			continue
-		} else if p[i] == ' ' {
-			hasSpce = true
-		} else if p[i] != ' ' && hasSpce {
-			hasSpce = false
+		if l[i] == ' ' {
+			if (p.inContainer && isHead) || hasSpace {
+				continue
+			}
+			hasSpace = true
+		} else if l[i] != ' ' && hasSpace {
+			hasSpace = false
+			isHead = false
 		}
 
-		if p[i] == '\n' {
-			p[i] = ' '
+		if l[i] == '\n' {
+			isHead = true
+			if !p.inContainer {
+				l[i] = ' '
+			}
 		}
 
-		buf[bufPos] = p[i]
+		buf[bufPos] = l[i]
 		bufPos++
 	}
 }
@@ -113,6 +131,16 @@ func formatParagraphExiting(n *bf.Node) string {
 		s += "\n"
 	}
 	return s
+}
+
+func formatBlockQuote(n *bf.Node) string {
+	buf := new(bytes.Buffer)
+	if n.FirstChild == nil {
+		return "> " // ホンマか
+	}
+	p := newPrinterWithinContainer(buf, n.FirstChild)
+	p.Fprint()
+	return "> " + strings.TrimSpace(buf.String())
 }
 
 func isBlock(t bf.NodeType) bool {
