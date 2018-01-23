@@ -29,6 +29,7 @@ func visitor(node *blackfriday.Node, entering bool) blackfriday.WalkStatus {
 		// pp.Println(node.String())
 		// return blackfriday.GoToNext
 	case blackfriday.Heading:
+		// == or #
 		pp.Println(node.HeadingData)
 		return blackfriday.GoToNext
 	case blackfriday.HorizontalRule:
