@@ -67,7 +67,7 @@ func (p *Printer) exiting(n *bf.Node) {
 	case bf.Heading:
 		p.print("\n")
 	case bf.Paragraph:
-		p.print("  \n")
+		p.print(formatParagraphExiting(n))
 	}
 }
 
@@ -103,4 +103,18 @@ func formatText(p []byte) string {
 // - insert two breaks between ---
 func formatHorizontalRule() string {
 	return "\n---\n\n"
+}
+
+// rules:
+// - insert a break to under the paragraph if next node is a block
+func formatParagraphExiting(n *bf.Node) string {
+	s := "  \n"
+	if n.Next != nil && isBlock(n.Next.Type) {
+		s += "\n"
+	}
+	return s
+}
+
+func isBlock(t bf.NodeType) bool {
+	return t == bf.Paragraph || t == bf.BlockQuote || t == bf.List || t == bf.Heading || t == bf.CodeBlock
 }

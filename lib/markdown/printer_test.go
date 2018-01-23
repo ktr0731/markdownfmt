@@ -27,7 +27,12 @@ func TestPrinter(t *testing.T) {
 
 ## header2
 this is a text.  
+
 two line text and paragraph.  
+
+many breaks are trimed by AST.  
+
+### header
 `
 
 	assert.Equal(t, expected, buf.String())
