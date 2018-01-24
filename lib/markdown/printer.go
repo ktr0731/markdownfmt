@@ -73,9 +73,13 @@ func (p *Printer) entering(n *bf.Node) bf.WalkStatus {
 		return bf.SkipChildren
 	case bf.Hardbreak:
 		p.print("  \n")
+	case bf.Link:
+		p.print(formatLink(n))
+		return bf.SkipChildren
 
 	case bf.List:
 	case bf.Document:
+	case bf.CodeBlock:
 	case bf.Paragraph:
 	default:
 		p.print(n.String())
@@ -168,6 +172,10 @@ func formatImage(n *bf.Node) string {
 
 func formatItem(n *bf.Node) string {
 	return "- " + string(n.Literal)
+}
+
+func formatLink(n *bf.Node) string {
+	return fmt.Sprintf("[%s](%s)  ", string(n.FirstChild.Literal), string(n.LinkData.Destination))
 }
 
 // rules:
