@@ -57,11 +57,24 @@ func (p *Printer) entering(n *bf.Node) bf.WalkStatus {
 		p.print(" ")
 	case bf.HorizontalRule:
 		p.print(formatHorizontalRule())
+	case bf.Code:
+		p.print(formatCode(n))
 	case bf.Text:
 		p.print(p.formatText(n))
 	case bf.BlockQuote:
 		p.print(formatBlockQuote(n))
 		return bf.SkipChildren
+	case bf.Image:
+		p.print(formatImage(n))
+	case bf.Item:
+		p.print(formatItem(n))
+	case bf.Strong:
+		p.print(formatStrong(n))
+		return bf.SkipChildren
+	case bf.Hardbreak:
+		p.print("  \n")
+
+	case bf.List:
 	case bf.Document:
 	case bf.Paragraph:
 	default:
@@ -78,6 +91,11 @@ func (p *Printer) exiting(n *bf.Node) bf.WalkStatus {
 		p.print("\n")
 	case bf.Paragraph:
 		p.print(formatParagraphExiting(n))
+	case bf.CodeBlock:
+	case bf.List:
+		if n.Next != nil && n.Next.Type == bf.Paragraph {
+			p.print("\n")
+		}
 	}
 	return bf.GoToNext
 }
@@ -142,6 +160,30 @@ func formatBlockQuote(n *bf.Node) string {
 	p := newPrinterWithinContainer(buf, n.FirstChild)
 	p.Fprint()
 	return "> " + strings.TrimSpace(buf.String())
+}
+
+func formatImage(n *bf.Node) string {
+	return fmt.Sprintf("![%s](%s)  ", string(n.Literal), string(n.LinkData.Destination))
+}
+
+func formatItem(n *bf.Node) string {
+	return "- " + string(n.Literal)
+}
+
+// rules:
+// - insert two spaces between text
+func formatStrong(n *bf.Node) string {
+	buf := new(bytes.Buffer)
+	if n.FirstChild == nil {
+		return ""
+	}
+	p := newPrinterWithinContainer(buf, n.FirstChild)
+	p.Fprint()
+	return fmt.Sprintf(" **%s** ", buf.String())
+}
+
+func formatCode(n *bf.Node) string {
+	return fmt.Sprintf("``` %s\n```\n", string(n.Literal))
 }
 
 func isBlock(t bf.NodeType) bool {
