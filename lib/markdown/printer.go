@@ -149,7 +149,7 @@ func formatHorizontalRule() string {
 // rules:
 // - insert a break to under the paragraph if next node is a block
 func formatParagraphExiting(n *bf.Node) string {
-	s := "  \n"
+	s := "\n"
 	if n.Next != nil && isBlock(n.Next.Type) {
 		s += "\n"
 	}
@@ -167,7 +167,7 @@ func formatBlockQuote(n *bf.Node) string {
 }
 
 func formatImage(n *bf.Node) string {
-	return fmt.Sprintf("![%s](%s)  ", string(n.Literal), string(n.LinkData.Destination))
+	return fmt.Sprintf("![%s](%s)", string(n.Literal), string(n.LinkData.Destination))
 }
 
 func formatItem(n *bf.Node) string {
@@ -175,7 +175,7 @@ func formatItem(n *bf.Node) string {
 }
 
 func formatLink(n *bf.Node) string {
-	return fmt.Sprintf("[%s](%s)  ", string(n.FirstChild.Literal), string(n.LinkData.Destination))
+	return fmt.Sprintf("[%s](%s)", string(n.FirstChild.Literal), string(n.LinkData.Destination))
 }
 
 // rules:
